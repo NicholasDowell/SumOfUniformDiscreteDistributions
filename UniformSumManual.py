@@ -13,7 +13,7 @@ h = 7
 '''
 for i in range(1,k+1):
     print(i)
-'''
+d'''
 frequencies = {}
 def sum_dice(dice_count, side_count, running_total = 0):
     if dice_count == 0:
@@ -30,7 +30,8 @@ def sum_dice(dice_count, side_count, running_total = 0):
 final_hit_freq = {}
 def final_hit_calc(hp, side_count, previous_hit = 0, total_damage = 0):
     if total_damage >= hp:
-        final_hit_freq[previous_hit] = final_hit_freq.setdefault(previous_hit, 0) + 1
+        killing_blow = previous_hit - (total_damage - hp)
+        final_hit_freq[killing_blow] = final_hit_freq.setdefault(killing_blow, 0) + 1
         print(final_hit_freq.values())
         return
     for outcome in range(1, side_count + 1):
@@ -41,22 +42,24 @@ def final_hit_calc(hp, side_count, previous_hit = 0, total_damage = 0):
 # a version of final_hit_calc that uses memoization to reduce computation time
     # When we call a return, we add the return value to a dictionary, with the total_damage as the key
 memos = {}
-def m_final_hit_calc(hp, side_count, previous_hit = 0, total_damage = 0, freq = {}):
-    # Base Case: You've killed the monster
+def m_final_hit_calc(hp, side_count, previous_hit = 0, total_damage = 0):
+    # Base Case: You've killed the monster (total damage > hp)
     if total_damage >= hp:
-        freq[previous_hit] = freq.setdefault(previous_hit, 0) + 1
-        if freq[1] % 500000 == 0: print(freq.values()) # This line is a running status statement
-        new_dict = {total_damage: previous_hit}
+        killing_blow = previous_hit - (total_damage - hp)
+        new_dict = {killing_blow: 1}
         return new_dict
     # Common Case 1: Check to see if you've done this calculation already
-    if memos[total_damage] is not None:
+    if total_damage in memos:
         return memos[total_damage]
     # Common Case 2: Do the actual calculation
+    result_dict = {}
     for outcome in range(1, side_count + 1):
-        #print("Damage =  " + str(outcome))
-        m_final_hit_calc(hp , side_count, outcome, total_damage + outcome, freq)
-        #print("Damage Done: " + str(outcome + total_damage))
-
+        dict2 = m_final_hit_calc(hp, side_count, outcome, total_damage + outcome)
+        result_dict = add_dictionary_values(result_dict, dict2)
+        # if result_dict[1] % 100000 == 0:
+            # print(result_dict)
+    memos[total_damage] = result_dict
+    return result_dict
 # adds the values stored in two dictionaries together, and returns a new dictionary with the sums
 def add_dictionary_values(dict1, dict2):
     for key in dict2:
@@ -73,7 +76,12 @@ def catan_dist():
     return catan_freq.values()
 
 
-
+# normalizes the values of the dictionary so that the sum of the values is 1
+def normalize_dict(dict):
+    total = sum((value for value in dict.values()))
+    for key in dict:
+        dict[key] = dict[key] / total
+    return dict
 
 '''
 sum_dice(5, 15)
@@ -98,5 +106,10 @@ first = {'a' : 10,
 second = {'b' : 10,
           'c' : 10}
 
+#final_hit_calc(20, 4)
+#print(final_hit_freq)
+f = m_final_hit_calc(200, 60)
+print(f)
+print(normalize_dict(f))
 
-print(add_dictionary_values(first, second))
+
